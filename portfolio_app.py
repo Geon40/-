@@ -59,15 +59,15 @@ sample_df = pd.DataFrame({
     "Currency": ["USD", "KRW", "JPY"],
 })
 
+DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1MJSCOma3hZBRLdzUELplQ6p2wuF7X4d"
+
+uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
+
 if uploaded is not None:
-    try:
-        portfolio_df = pd.read_csv(uploaded)
-    except Exception as e:
-        st.error(f"Failed to read CSV: {e}")
-        st.stop()
+    portfolio_df = pd.read_csv(uploaded)
 else:
-    st.caption("No CSV uploaded — using sample data. You can download the template from the sidebar.")
-    portfolio_df = sample_df.copy()
+    portfolio_df = pd.read_csv(DEFAULT_URL)
+
 
 # Data cleaning
 required_cols = ["Ticker", "Quantity", "AverageCost", "Currency"]
