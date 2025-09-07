@@ -59,21 +59,25 @@ sample_df = pd.DataFrame({
     "Currency": ["USD", "KRW", "JPY"],
 })
 
-# 구글 드라이브 CSV 기본값 URL (공유: 링크가 있는 모든 사용자 '보기')
+# --- Load portfolio data (GDrive default) ---
 DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1MJSCOrma3hZBRLdzuELplQ6p2wuF7X4d"
 
 uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
 
-if uploaded is not None:
-    # 업로드 우선 (xlsx도 지원)
-    if uploaded.name.lower().endswith(".xlsx"):
-        portfolio_df = pd.read_excel(uploaded)
+try:
+    if uploaded is not None:
+        # 업로드된 파일 우선 적용
+        if uploaded.name.lower().endswith(".xlsx"):
+            portfolio_df = pd.read_excel(uploaded)
+        else:
+            portfolio_df = pd.read_csv(uploaded)
     else:
-        portfolio_df = pd.read_csv(uploaded)
-else:
-    # 업로드 없으면 드라이브에서 자동 로드
-    portfolio_df = pd.read_csv(DEFAULT_URL)
-)
+        # 업로드가 없으면 구글드라이브 CSV 자동 로드
+        portfolio_df = pd.read_csv(DEFAULT_URL)
+except Exception as e:
+    st.error(f"Failed to read portfolio file: {e}")
+    st.stop()
+
 
 # Data cleaning
 required_cols = ["Ticker", "Quantity", "AverageCost", "Currency"]
