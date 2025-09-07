@@ -26,7 +26,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Portfolio ROI Tracker", layout="wide")
 
-st.title("📈 Portfolio ROI Tracker (Yahoo Finance)")
+st.title("📈 증권연구회 투자부 Portfolio ROI Tracker (Yahoo Finance, Geon40 made by 😲)")
 
 with st.sidebar:
     st.header("⚙️ Settings")
@@ -59,15 +59,21 @@ sample_df = pd.DataFrame({
     "Currency": ["USD", "KRW", "JPY"],
 })
 
+# 구글 드라이브 CSV 기본값 URL (공유: 링크가 있는 모든 사용자 '보기')
+DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1MJSCOrma3hZBRLdzuELplQ6p2wuF7X4d"
+
+uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
+
 if uploaded is not None:
-    try:
+    # 업로드 우선 (xlsx도 지원)
+    if uploaded.name.lower().endswith(".xlsx"):
+        portfolio_df = pd.read_excel(uploaded)
+    else:
         portfolio_df = pd.read_csv(uploaded)
-    except Exception as e:
-        st.error(f"Failed to read CSV: {e}")
-        st.stop()
 else:
-    st.caption("No CSV uploaded — using sample data. You can download the template from the sidebar.")
-    portfolio_df = sample_df.copy()
+    # 업로드 없으면 드라이브에서 자동 로드
+    portfolio_df = pd.read_csv(DEFAULT_URL)
+)
 
 # Data cleaning
 required_cols = ["Ticker", "Quantity", "AverageCost", "Currency"]
