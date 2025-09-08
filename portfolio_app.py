@@ -26,7 +26,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Portfolio ROI Tracker", layout="wide")
 
-st.title("📈 증권연구회 투자부 Portfolio ROI Tracker (Yahoo Finance, Geon40 made by 😲)")
+st.title("📈 증권연구회 투자부 Portfolio ROI Tracker (YFinance, Geon40)")
 
 with st.sidebar:
     st.header("⚙️ Settings")
@@ -59,8 +59,7 @@ sample_df = pd.DataFrame({
 })
 
 # --- Load portfolio data (GDrive default) ---
-DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1MJSCOrma3hZBRLdzuELplQ6p2wuF7X4d"
-
+DEFAULT_URL = "https://docs.google.com/spreadsheets/d/1kx-2Ao2-leaOJILqRvfryERpxi2hnSYCzgThBNUO-TI/export?format=csv&gid=386082421"
 
 uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
 
