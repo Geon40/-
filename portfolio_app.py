@@ -49,7 +49,6 @@ with st.sidebar:
     st.markdown("---")
     st.caption("💡 Tip: Upload your CSV or edit the sample table below.")
 
-uploaded = st.file_uploader("Upload portfolio CSV", type=["csv"])
 
 # Sample data
 sample_df = pd.DataFrame({
