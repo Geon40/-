@@ -58,28 +58,42 @@ sample_df = pd.DataFrame({
     "Currency": ["USD", "KRW", "JPY"],
 })
 
-# --- Load portfolio data (Google Sheets CSV export robust) ---
-import io, requests
+# --- Load portfolio data (robust Google Sheets CSV) ---
+import io, time, requests
 
-# 스프레드시트 CSV export 링크로 변경하세요 (gid는 시트 탭의 gid)
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1kx-2Ao2-leaOJILqRvfryERpxi2hnSYCzgThBNUO-TI/export?format=csv&gid=386082421"
+# 1) 시트 ID / gid 그대로 사용
+SHEET_ID = "1kx-2Ao2-leaOJILqRvfryERpxi2hnSYCzgThBNUO-TI"
+GID      = "386082421"
+
+# 2) 후보 URL 2종: export / gviz (둘 다 CSV)
+SHEET_EXPORT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
+SHEET_GVIZ_URL   = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={GID}"
 
 uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
 
-def read_sheet_csv(url: str) -> pd.DataFrame:
-    """구글 스프레드시트 export CSV를 안정적으로 읽는다(헤더 포함)."""
-    if "docs.google.com/spreadsheets" not in url or "export?format=csv" not in url:
-        raise ValueError("URL은 반드시 스프레드시트 export CSV 형식이어야 합니다: "
-                         ".../spreadsheets/d/<ID>/export?format=csv&gid=<gid>")
-    # 일부 환경에서 UA 없으면 403/리다이렉트 이슈 → 헤더 지정 + redirect 허용
-    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=True, timeout=20)
-    r.raise_for_status()
-    content = r.content
-    # 한글 CSV 대비 utf-8-sig 먼저 시도
-    try:
-        return pd.read_csv(io.BytesIO(content), encoding="utf-8-sig")
-    except Exception:
-        return pd.read_csv(io.BytesIO(content))
+def fetch_csv_with_retry(urls, tries=3, timeout=60):
+    """
+    여러 URL 후보를 순서대로 시도하고, 각 URL을 최대 tries번 재시도.
+    UA 헤더를 넣어 403/리다이렉트 이슈를 회피.
+    """
+    last_err = None
+    headers = {"User-Agent": "Mozilla/5.0"}
+    for url in urls:
+        for attempt in range(1, tries+1):
+            try:
+                r = requests.get(url, headers=headers, allow_redirects=True, timeout=timeout)
+                r.raise_for_status()
+                content = r.content
+                # utf-8-sig 우선, 실패 시 utf-8
+                try:
+                    return pd.read_csv(io.BytesIO(content), encoding="utf-8-sig")
+                except Exception:
+                    return pd.read_csv(io.BytesIO(content))
+            except Exception as e:
+                last_err = e
+                time.sleep(1.5 * attempt)  # 간단한 backoff
+        # 다음 후보 URL로 넘어감
+    raise RuntimeError(f"모든 시도 실패: {last_err}")
 
 try:
     if uploaded is not None:
@@ -89,8 +103,9 @@ try:
             portfolio_df = pd.read_csv(uploaded)
         st.caption("📄 Using uploaded file.")
     else:
-        portfolio_df = read_sheet_csv(SHEET_CSV_URL)
-        st.caption("🔗 Using Google Sheet (export CSV).")
+        # export → gviz 순으로 시도
+        portfolio_df = fetch_csv_with_retry([SHEET_EXPORT_URL, SHEET_GVIZ_URL], tries=3, timeout=60)
+        st.caption("🔗 Using Google Sheet (CSV export).")
 except Exception as e:
     st.error(f"❌ 포트폴리오 파일을 읽지 못했습니다: {e}")
     st.stop()
@@ -101,7 +116,6 @@ if name_col:
     portfolio_df["Name"] = portfolio_df[name_col].astype(str).str.strip()
 else:
     portfolio_df["Name"] = portfolio_df.get("Ticker", "")
-
 
 
 # Data cleaning
