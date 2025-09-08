@@ -58,24 +58,50 @@ sample_df = pd.DataFrame({
     "Currency": ["USD", "KRW", "JPY"],
 })
 
-# --- Load portfolio data (GDrive default) ---
-DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1MJSCOrma3hZBRLdzuELplQ6p2wuF7X4d"
+# --- Load portfolio data (Google Sheets CSV export robust) ---
+import io, requests
+
+# 스프레드시트 CSV export 링크로 변경하세요 (gid는 시트 탭의 gid)
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1kx-2Ao2-leaOJILqRvfryERpxi2hnSYCzgThBNUO-TI/export?format=csv&gid=386082421"
 
 uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
 
+def read_sheet_csv(url: str) -> pd.DataFrame:
+    """구글 스프레드시트 export CSV를 안정적으로 읽는다(헤더 포함)."""
+    if "docs.google.com/spreadsheets" not in url or "export?format=csv" not in url:
+        raise ValueError("URL은 반드시 스프레드시트 export CSV 형식이어야 합니다: "
+                         ".../spreadsheets/d/<ID>/export?format=csv&gid=<gid>")
+    # 일부 환경에서 UA 없으면 403/리다이렉트 이슈 → 헤더 지정 + redirect 허용
+    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=True, timeout=20)
+    r.raise_for_status()
+    content = r.content
+    # 한글 CSV 대비 utf-8-sig 먼저 시도
+    try:
+        return pd.read_csv(io.BytesIO(content), encoding="utf-8-sig")
+    except Exception:
+        return pd.read_csv(io.BytesIO(content))
+
 try:
     if uploaded is not None:
-        # 업로드된 파일 우선 적용
         if uploaded.name.lower().endswith(".xlsx"):
             portfolio_df = pd.read_excel(uploaded)
         else:
             portfolio_df = pd.read_csv(uploaded)
+        st.caption("📄 Using uploaded file.")
     else:
-        # 업로드가 없으면 구글드라이브 CSV 자동 로드
-        portfolio_df = pd.read_csv(DEFAULT_URL)
+        portfolio_df = read_sheet_csv(SHEET_CSV_URL)
+        st.caption("🔗 Using Google Sheet (export CSV).")
 except Exception as e:
-    st.error(f"Failed to read portfolio file: {e}")
+    st.error(f"❌ 포트폴리오 파일을 읽지 못했습니다: {e}")
     st.stop()
+
+# --- Optional: Name/종목명 지원 ---
+name_col = next((c for c in ["Name", "종목명", "name", "종목"] if c in portfolio_df.columns), None)
+if name_col:
+    portfolio_df["Name"] = portfolio_df[name_col].astype(str).str.strip()
+else:
+    portfolio_df["Name"] = portfolio_df.get("Ticker", "")
+
 
 
 # Data cleaning
