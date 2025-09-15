@@ -59,7 +59,7 @@ sample_df = pd.DataFrame({
 })
 
 # --- Load portfolio data (GDrive default) ---
-DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1HvNqsUUxHvNhVKRLi6jPBTruwiLtwVDp"
+DEFAULT_URL = "https://drive.google.com/uc?id=1_0DlWjq1xhLod14Q0inmcUN8RInxF3dR"
 
 
 uploaded = st.file_uploader("Upload portfolio CSV", type=["csv", "xlsx"])
