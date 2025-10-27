@@ -59,7 +59,7 @@ sample_df = pd.DataFrame({
 })
 
 # --- Load portfolio data (GDrive default) ---
-DEFAULT_URL = "https://drive.google.com/uc?id=1LQOigngRqO_N9FZLWjUTQtqkq-Bd-VMP"
+DEFAULT_URL = "https://drive.google.com/uc?export=download&id=1nNUxH1unC1_ItBYEs3Hj6HXQpPbwU7q1"
 
 
 
